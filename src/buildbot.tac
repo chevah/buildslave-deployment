@@ -8,7 +8,7 @@ from buildslave.bot import BuildSlave
 
 # Default host reachable inside the VPN.
 # Update it when accessing from external networks.
-buildmaster_host = 'build.chevah.com'
+buildmaster_host = 'buildmaster.chevah.com'
 port = 10089
 
 # Get the buildslave_name set by paver.

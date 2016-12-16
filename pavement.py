@@ -13,13 +13,10 @@ from paver.tasks import help
 BUILD_PACKAGES = [
     # Main slave package.
     # We specify a custom twisted package, to use our patched version.
-    'twisted==12.1.0.chevah4',
+    'twisted==12.1.0.chevah12',
     'buildbot-slave==0.8.11.pre.143.gac88f1b.c1',
 
     'zope.interface==3.8.0',
-
-    # Buildbot is used for try scheduler
-    'buildbot',
 
     # Required for some unicode handling.
     'unidecode',
@@ -42,8 +39,9 @@ help
 lint
 
 SETUP['folders']['source'] = 'src'
-SETUP['buildbot']['web_url'] = 'http://build.chevah.com:10088'
-SETUP['pypi']['index_url'] = 'http://pypi.chevah.com:10042/simple'
+SETUP['buildbot']['server'] = 'buildbot.chevah.com'
+SETUP['buildbot']['web_url'] = 'https://chevah.com/buildbot/'
+SETUP['pypi']['index_url'] = 'http://pypi.chevah.com/simple'
 
 option_name = (
     'name=',
