@@ -6,6 +6,7 @@ Build script for Chevah Server buildbot slave.
 It should work on all operating system, including Windows.
 '''
 import sys
+import os
 
 from paver.easy import cmdopts, needs, task, consume_args, pushd
 from paver.tasks import help
@@ -92,6 +93,7 @@ def buildslave(args):
 @cmdopts([option_name])
 def start(options):
     '''Start the slave buildbot.'''
+    _remove_empty_pid_file()
     from buildslave.scripts import runner
 
     # Set buildslave name to be used in buildbot.tac.
@@ -119,6 +121,7 @@ def stop():
 @cmdopts([option_name])
 def debug(options):
     '''Run the buildslave without forking in background.'''
+    _remove_empty_pid_file()
 
     # Set buildslave name to be used in buildbot.tac.
     sys.buildslave_name = pave.getOption(
@@ -144,3 +147,19 @@ def debug(options):
     from twisted.scripts import twistd
     with pushd(pave.fs.join([pave.path.build, 'slave'])):
         twistd.run()
+
+def _remove_empty_pid_file():
+    """
+    Remove zero-sized PID file from Twisted. Otherwise, Twisted fails to start.
+    """
+    pid_name = 'twistd.pid'
+    with pushd(pave.fs.join([pave.path.build, 'slave'])):
+        if not os.path.exists(pid_name):
+            # All good, there is no PID file, nothing to do.
+            return
+        print 'pid_name is:'
+        print pid_name
+        if os.stat(pid_name).st_size == 0:
+            # PID file is empty. Remove it to prevent Twisted bailing out.
+            print('Removing zero-sized PID file from Twisted: %s' % (pid_name))
+            os.remove(pid_name)
