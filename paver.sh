@@ -241,6 +241,32 @@ pip_install() {
     fi
 }
 
+#
+# Check for wget or curl and set needed download commands accordingly.
+#
+set_download_commands() {
+    set +o errexit
+    command -v wget
+    if [ $? -eq 0 ]; then
+        set -o errexit
+        echo "Using WGET for online operations..."
+        ONLINETEST_CMD="wget --spider --no-verbose"
+        # Use 1M dot to reduce console pollution.
+        DOWNLOAD_CMD="wget --progress=dot -e dotbytes=1M"
+        return
+    fi
+    command -v curl
+    if [ $? -eq 0 ]; then
+        set -o errexit
+        echo "Using CURL for online operations..."
+        ONLINETEST_CMD="curl --head --fail --output /dev/null"
+        # Use 1M dot to reduce console pollution.
+        DOWNLOAD_CMD="curl --remote-name"
+        return
+    fi
+    echo "Missing wget or curl! One of them is needed for online operations."
+    exit 30
+}
 
 #
 # Download and extract a binary distribution.
@@ -261,9 +287,7 @@ get_binary_dist() {
         rm -rf $dist_name
         rm -f $tar_gz_file
         rm -f $tar_file
-        # Use 1M dot to reduce console pollution.
-        execute wget --progress=dot -e dotbytes=1M \
-            $remote_base_url/${tar_gz_file}
+        execute $DOWNLOAD_CMD $remote_base_url/${tar_gz_file}
         execute gunzip $tar_gz_file
         execute tar -xf $tar_file
         rm -f $tar_gz_file
@@ -277,12 +301,10 @@ get_binary_dist() {
 #
 test_version_exists() {
     local remote_base_url=$1
-    local wget_test
     local target_file=python-${PYTHON_VERSION}-${OS}-${ARCH}.tar.gz
 
-    wget --spider $remote_base_url/${OS}/${ARCH}/$target_file
-    wget_test=$?
-    return $wget_test
+    $ONLINETEST_CMD $remote_base_url/${OS}/${ARCH}/$target_file
+    return $?
 }
 
 #
@@ -674,6 +696,7 @@ detect_os() {
             OS="osx"
         else
             echo "Unsupported Mac OS X version: $os_version_raw."
+            exit 17
         fi
 
 
@@ -731,6 +754,7 @@ detect_os() {
 
 detect_os
 update_path_variables
+set_download_commands
 
 if [ "$COMMAND" = "clean" ] ; then
     clean_build
