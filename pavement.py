@@ -157,8 +157,6 @@ def _remove_empty_pid_file():
         if not os.path.exists(pid_name):
             # All good, there is no PID file, nothing to do.
             return
-        print 'pid_name is:'
-        print pid_name
         if os.stat(pid_name).st_size == 0:
             # PID file is empty. Remove it to prevent Twisted bailing out.
             print('Removing zero-sized PID file from Twisted: %s' % (pid_name))
