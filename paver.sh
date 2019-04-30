@@ -259,7 +259,7 @@ set_download_commands() {
     if [ $? -eq 0 ]; then
         set -o errexit
         echo "Using CURL for online operations..."
-        ONLINETEST_CMD="curl --head --fail --output /dev/null"
+        ONLINETEST_CMD="curl --fail --silent --head --output /dev/null"
         # Use 1M dot to reduce console pollution.
         DOWNLOAD_CMD="curl --remote-name"
         return
