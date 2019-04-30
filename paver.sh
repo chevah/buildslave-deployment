@@ -250,9 +250,8 @@ set_download_commands() {
     if [ $? -eq 0 ]; then
         set -o errexit
         echo "Using WGET for online operations..."
-        ONLINETEST_CMD="wget --spider --no-verbose"
-        # Use 1M dot to reduce console pollution.
-        DOWNLOAD_CMD="wget --progress=dot -e dotbytes=1M"
+        ONLINETEST_CMD="wget --spider --quiet"
+        DOWNLOAD_CMD="wget"
         return
     fi
     command -v curl
