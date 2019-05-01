@@ -251,7 +251,8 @@ set_download_commands() {
         set -o errexit
         echo "Using WGET for online operations..."
         ONLINETEST_CMD="wget --spider --quiet"
-        DOWNLOAD_CMD="wget"
+        # Use 1MB dots to reduce output, avoiding polluting Buildbot's pages.
+        DOWNLOAD_CMD="wget --progress=dot --execute dot_bytes=1m"
         return
     fi
     command -v curl
@@ -259,7 +260,6 @@ set_download_commands() {
         set -o errexit
         echo "Using CURL for online operations..."
         ONLINETEST_CMD="curl --fail --silent --head --output /dev/null"
-        # Use 1M dot to reduce console pollution.
         DOWNLOAD_CMD="curl --remote-name"
         return
     fi
