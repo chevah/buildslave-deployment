@@ -246,19 +246,19 @@ pip_install() {
 #
 set_download_commands() {
     set +o errexit
-    command -v wget
+    command -v wget > /dev/null
     if [ $? -eq 0 ]; then
         set -o errexit
-        echo "Using WGET for online operations..."
+        echo "Using WGET for downloading Python package..."
         ONLINETEST_CMD="wget --spider --quiet"
         # Use 1MB dots to reduce output, avoiding polluting Buildbot's pages.
         DOWNLOAD_CMD="wget --progress=dot --execute dot_bytes=1m"
         return
     fi
-    command -v curl
+    command -v curl > /dev/null
     if [ $? -eq 0 ]; then
         set -o errexit
-        echo "Using CURL for online operations..."
+        echo "Using CURL for downloading Python package..."
         ONLINETEST_CMD="curl --fail --silent --head --output /dev/null"
         DOWNLOAD_CMD="curl --remote-name"
         return
@@ -753,7 +753,6 @@ detect_os() {
 
 detect_os
 update_path_variables
-set_download_commands
 
 if [ "$COMMAND" = "clean" ] ; then
     clean_build
@@ -769,6 +768,9 @@ if [ "$COMMAND" = "detect_os" ] ; then
     write_default_values
     exit 0
 fi
+
+# Following functions need to check or download online packages.
+set_download_commands
 
 if [ "$COMMAND" = "get_python" ] ; then
     OS=$2
