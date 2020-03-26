@@ -262,14 +262,14 @@ set_download_commands() {
             # This is not GNU Wget, could be the more frugal wget from Busybox.
             DOWNLOAD_CMD="wget"
         else
-            # Use 1MB dots to reduce output, avoiding polluting Buildbot's pages.
+            # Use 1MB dots to reduce output and avoid polluting Buildbot pages.
             DOWNLOAD_CMD="wget --progress=dot --execute dot_bytes=1m"
         fi
         ONLINETEST_CMD="wget --spider --quiet"
         set -o errexit
         return
     fi
-    (>&2 echo "Missing wget/curl! One of them is needed for online operations.")
+    (>&2 echo "Missing curl and wget! One is needed for online operations.")
     exit 3
 }
 
