@@ -242,18 +242,10 @@ pip_install() {
 }
 
 #
-# Check for curl or wget and set needed download commands accordingly.
+# Check for wget or curl and set needed download commands accordingly.
 #
 set_download_commands() {
     set +o errexit
-    command -v curl > /dev/null
-    if [ $? -eq 0 ]; then
-        # Using CURL for downloading Python package.
-        DOWNLOAD_CMD="curl --remote-name"
-        ONLINETEST_CMD="curl --fail --silent --head --output /dev/null"
-        set -o errexit
-        return
-    fi
     command -v wget > /dev/null
     if [ $? -eq 0 ]; then
         # Using WGET for downloading Python package.
@@ -269,7 +261,15 @@ set_download_commands() {
         set -o errexit
         return
     fi
-    (>&2 echo "Missing curl and wget! One is needed for online operations.")
+    command -v curl > /dev/null
+    if [ $? -eq 0 ]; then
+        # Using CURL for downloading Python package.
+        DOWNLOAD_CMD="curl --remote-name"
+        ONLINETEST_CMD="curl --fail --silent --head --output /dev/null"
+        set -o errexit
+        return
+    fi
+    (>&2 echo "Missing wget and curl! One is needed for online operations.")
     exit 3
 }
 
