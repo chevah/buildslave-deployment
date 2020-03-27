@@ -1,5 +1,8 @@
-DEFAULT_VALUES
-cache/
+/build/
+/dist/
+/DEFAULT_VALUES
+/build-*
+/cache
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
