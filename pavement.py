@@ -14,7 +14,7 @@ from paver.tasks import help
 BUILD_PACKAGES = [
     # Main slave package.
     # We specify a custom twisted package, to use our patched version.
-    'twisted==12.1.0.chevah12',
+    'twisted==15.5.0.chevah7',
     'buildbot-slave==0.8.11.pre.143.gac88f1b.c1',
 
     'zope.interface==3.8.0',
