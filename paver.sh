@@ -655,20 +655,6 @@ detect_os() {
                             "$os_version_raw" os_version_chevah
                         set_os_if_not_generic "amzn" $os_version_chevah
                         ;;
-                    sles)
-                        os_version_raw="$VERSION_ID"
-                        check_os_version "SUSE Linux Enterprise Server" 11 \
-                            "$os_version_raw" os_version_chevah
-                        # SLES 11 has OpenSSL 0.9.8, Security Module only adds
-                        # 1.0.1, so we use generic builds with included OpenSSL.
-                        if [ "$os_version_chevah" -eq 11 ]; then
-                            # We support this, so no need for check_linux_glibc,
-                            # As it has oldest glibc version among our slaves,
-                            # we use it for building generic Linux runtimes.
-                            OS="lnx"
-                        fi
-                        set_os_if_not_generic "sles" $os_version_chevah
-                        ;;
                     ubuntu|ubuntu-core)
                         os_version_raw="$VERSION_ID"
                         # 12.04/14.04 have OpenSSL 1.0.1, use generic Linux.
@@ -689,7 +675,7 @@ detect_os() {
                         set_os_if_not_generic "alpine" $os_version_chevah
                         ;;
                     *)
-                        # Unsupported modern distros such as Debian, Arch, etc.
+                        # Unsupported modern distros such as SLES, Debian, etc.
                         check_linux_glibc
                         ;;
                 esac
@@ -698,19 +684,12 @@ detect_os() {
         Darwin)
             ARCH=$(uname -m)
             os_version_raw=$(sw_vers -productVersion)
-            check_os_version "Mac OS X" 10.8 "$os_version_raw" os_version_chevah
-            if [ ${os_version_chevah:0:2} -eq 10 -a \
-                ${os_version_chevah:2:2} -ge 13 ]; then
-                # For macOS 10.13 or newer we use 'macos'.
-                OS="macos"
-            elif [ ${os_version_chevah:0:2} -eq 10 -a \
-                ${os_version_chevah:2:2} -ge 8 ]; then
-                # For macOS 10.12 and OS X 10.8-10.11 we use 'osx'.
-                OS="osx"
-            else
-                (>&2 echo "Unsupported Mac OS X version: $os_version_raw.")
-                exit 17
-            fi
+            # Tested on 10.13, but this works on 10.12 too. Older versions need
+            # "-Wl,-no_weak_imports" in LDFLAGS to avoid runtime issues. More
+            # details at https://github.com/Homebrew/homebrew-core/issues/3727.
+            check_os_version "macOS" 10.12 "$os_version_raw" os_version_chevah
+            # Build a generic package to cover all supported versions.
+            OS="macos"
             ;;
         FreeBSD)
             ARCH=$(uname -m)
