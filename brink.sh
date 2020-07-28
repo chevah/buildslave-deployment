@@ -1,25 +1,38 @@
 #!/usr/bin/env bash
-# Copyright (c) 2010-2013 Adi Roiban.
-# See LICENSE for details.
+# Copyright (c) 2010-2020 Adi Roiban.
+# See MIT LICENSE for details.
 #
-# Helper script for bootstrapping the build system on Unix/Msys.
-# It will write the default values in the 'DEFAULT_VALUES' file.
+# This file has no version. Documentation is found in this comment.
 #
-# To use this script you will need to publish binary archive files for the
-# following components:
+# Helper script for bootstrapping a Python based build system on Unix/Msys.
 #
-# * Python main distribution
-# * pip
-# * setuptools
+# It is similar with a python-virtualenv but it will not used the local
+# Python version and can be used on systems without a local Python.
 #
-# It will delegate the argument to the paver script, with the exception of
-# these commands:
-#
+# It will delegate the argument to the execute_venv function,
+# with the exception of these commands:
 # * clean - remove everything, except cache
 # * purge - remove (empty) the cache
-# * detect_os - detect operating system, create the DEFAULT_VALUES file and exit
 # * get_python - download Python distribution in cache
 # * get_agent - download Rexx/Putty distribution in cache
+#
+# It exports the following environment variables:
+# * PYTHONPATH - path to the build directory
+# * CHEVAH_PYTHON - name of the python versions
+# * CHEVAH_OS - name of the current OS
+# * CHEVAH_ARCH - CPU type of the current OS
+#
+# The build directory is used from CHEVAH_BUILD env,
+# then read from brink.conf as CHEVAH_BUILD_DIR,
+# and will use a default value if not defined there.
+#
+# The cache directory is read the CHEVAH_CACHE env,
+# and then read from brink.conf as CHEVAH_CACHE_DIR,
+# and will use a default value if not defined.
+#
+# You can define your own `execute_venv` function in paver.conf with the
+# command used to execute Python inside the newly virtual environment.
+#
 
 # Script initialization.
 set -o nounset
@@ -50,8 +63,17 @@ WAS_PYTHON_JUST_INSTALLED=0
 DIST_FOLDER='dist'
 
 # Path global variables.
+
+# Configuration variable.
+CHEVAH_BUILD_DIR=""
+# Variale used at runtime.
 BUILD_FOLDER=""
-CACHE_FOLDER="cache"
+
+# Configuration variable
+CHEVAH_CACHE_DIR=
+# Varible used at runtime.
+CACHE_FOLDER=""
+
 PYTHON_BIN=""
 PYTHON_LIB=""
 LOCAL_PYTHON_BINARY_DIST=""
@@ -60,7 +82,7 @@ LOCAL_PYTHON_BINARY_DIST=""
 OS='not-detected-yet'
 ARCH='not-detected-yet'
 
-# Initialize default values from paver.conf
+# Initialize default values from brink.conf
 PYTHON_CONFIGURATION='NOT-YET-DEFINED'
 PYTHON_VERSION='not.defined.yet'
 PYTHON_PLATFORM='unknown-os-and-arch'
@@ -69,8 +91,42 @@ BINARY_DIST_URI='https://binary.chevah.com/production'
 PIP_INDEX='http://pypi.chevah.com'
 BASE_REQUIREMENTS=''
 
+#
+# Check that we have a pavement.py in the current dir.
+# otherwise it means we are out of the source folder and paver can not be
+# used there.
+#
+check_source_folder() {
+
+    if [ ! -e pavement.py ]; then
+        (>&2 echo 'No "pavement.py" file found in current folder.')
+        (>&2 echo 'Make sure you are running "paver.sh" from a source folder.')
+        exit 8
+    fi
+}
+
+# Called to trigger the entry point in the virtual environment.
+# Can be overwritten in brink.conf
+execute_venv() {
+    ${PYTHON_BIN} $PYTHON3_CHECK -c 'from paver.tasks import main; main()' "$@"
+}
+
+
+# Called to update the dependencies inside the newly created virtual
+# environment.
+update_venv() {
+    set +e
+    ${PYTHON_BIN} -c 'from paver.tasks import main; main()' deps
+    exit_code=$?
+    set -e
+    if [ $exit_code -ne 0 ]; then
+        (>&2 echo 'Failed to run the initial "./paver.sh deps" command.')
+        exit 7
+    fi
+}
+
 # Load repo specific configuration.
-source paver.conf
+source brink.conf
 
 
 clean_build() {
@@ -81,8 +137,6 @@ clean_build() {
     delete_folder ${DIST_FOLDER}
     echo "Removing publish..."
     delete_folder 'publish'
-    echo "Cleaning project temporary files..."
-    rm -f DEFAULT_VALUES
     echo "Cleaning pyc files ..."
 
     # AIX's find complains if there are no matching files when using +.
@@ -111,7 +165,7 @@ purge_cache() {
     clean_build
 
     echo "Cleaning download cache ..."
-    rm -rf cache/*
+    rm -rf $CACHE_FOLDER/*
 }
 
 
@@ -164,13 +218,42 @@ update_path_variables() {
         PYTHON_LIB="/lib/${PYTHON_NAME}/"
     fi
 
-    BUILD_FOLDER="build-${OS}-${ARCH}"
+    # Read first from env var.
+    set +o nounset
+    BUILD_FOLDER="${CHEVAH_BUILD}"
+    CACHE_FOLDER="${CHEVAH_CACHE}"
+    set -o nounset
+
+    if [ "${BUILD_FOLDER}" = "" ] ; then
+        # Use value from configuration file.
+        BUILD_FOLDER="${CHEVAH_BUILD_DIR}"
+    fi
+
+    if [ "${BUILD_FOLDER}" = "" ] ; then
+        # Use default value if not yet defined.
+        BUILD_FOLDER="build-${OS}-${ARCH}"
+    fi
+
+    if [ "${CACHE_FOLDER}" = "" ] ; then
+        # Use default if not yet defined.
+        CACHE_FOLDER="${CHEVAH_CACHE_DIR}"
+    fi
+
+    if [ "${CACHE_FOLDER}" = "" ] ; then
+        # Use default if not yet defined.
+        CACHE_FOLDER="cache"
+    fi
+
     PYTHON_BIN="${BUILD_FOLDER}${PYTHON_BIN}"
     PYTHON_LIB="${BUILD_FOLDER}${PYTHON_LIB}"
 
     LOCAL_PYTHON_BINARY_DIST="$PYTHON_NAME-$OS-$ARCH"
 
     export PYTHONPATH=${BUILD_FOLDER}
+    export CHEVAH_PYTHON=${PYTHON_NAME}
+    export CHEVAH_OS=${OS}
+    export CHEVAH_ARCH=${ARCH}
+
 }
 
 #
@@ -203,10 +286,6 @@ resolve_python_version() {
     done
 }
 
-write_default_values() {
-    echo ${BUILD_FOLDER} ${PYTHON_NAME} ${OS} ${ARCH} > DEFAULT_VALUES
-}
-
 
 #
 # Install base package.
@@ -227,16 +306,17 @@ pip_install() {
     # See https://github.com/pypa/pip/issues/3564
     rm -rf ${BUILD_FOLDER}/pip-build
     ${PYTHON_BIN} -m \
-        pip install $1 \
+        pip install \
             --trusted-host pypi.chevah.com \
-            --index-url=$PIP_INDEX/simple \
+            --trusted-host deag.chevah.com \
+            --index-url=$PIP_INDEX \
             --build=${BUILD_FOLDER}/pip-build \
-            --cache-dir=${CACHE_FOLDER}
+            $1
 
     exit_code=$?
     set -e
     if [ $exit_code -ne 0 ]; then
-        (>&2 echo "Failed to install brink.")
+        (>&2 echo "Failed to install $1.")
         exit 2
     fi
 }
@@ -452,29 +532,12 @@ install_dependencies(){
         return
     fi
 
-    set +e
-    ${PYTHON_BIN} -c 'from paver.tasks import main; main()' deps
-    exit_code=$?
-    set -e
-    if [ $exit_code -ne 0 ]; then
-        (>&2 echo 'Failed to run the initial "./paver.sh deps" command.')
-        exit 7
+    if [ "$COMMAND" == "deps" ] ; then
+        # Will be installed soon.
+        return
     fi
-}
 
-
-#
-# Check that we have a pavement.py in the current dir.
-# otherwise it means we are out of the source folder and paver can not be
-# used there.
-#
-check_source_folder() {
-
-    if [ ! -e pavement.py ]; then
-        (>&2 echo 'No "pavement.py" file found in current folder.')
-        (>&2 echo 'Make sure you are running "paver.sh" from a source folder.')
-        exit 8
-    fi
+    update_venv
 }
 
 
@@ -544,14 +607,28 @@ check_os_version() {
 # For old unsupported Linux distros (some with no /etc/os-release) and for other
 # unsupported Linux distros (eg. Arch), we check if the system is glibc-based.
 # If so, we use a generic code path that builds everything statically,
-# including OpenSSL, thus only requiring glibc 2.x.
+# including OpenSSL, thus only requiring glibc 2.X, where X differs by arch.
 #
 check_linux_glibc() {
     local glibc_version
     local glibc_version_array
+    local supported_glibc2_version
 
-    echo "Unsupported Linux distribution detected!"
-    echo "To get you going, we'll try to treat it as generic Linux..."
+    # Supported minimum minor glibc 2.X versions for various arches.
+    # For x64, we build on SLES 11 with glibc 2.11.3.
+    # For arm64, we build on Ubuntu 16.04 with glibc 2.23.
+    # Beware we haven't normalized arch names yet.
+    case "$ARCH" in
+        "amd64"|"x86_64"|"x64")
+            supported_glibc2_version=11
+            ;;
+        "aarch64"|"arm64")
+            supported_glibc2_version=23
+            ;;
+    esac
+
+    (>&2 echo -n "Couldn't detect a supported distribution. ")
+    (>&2 echo "Trying to treat it as generic Linux...")
 
     set +o errexit
 
@@ -567,7 +644,7 @@ check_linux_glibc() {
         exit 19
     fi
 
-    # Parsing tested with glibc 2.11.x and 2.29, eglibc 2.13 and 2.19.
+    # Tested with glibc 2.5/2.11.3/2.12/2.23/2.28-31 and eglibc 2.13/2.19.
     glibc_version=$(ldd --version | head -n 1 | rev | cut -d\  -f1 | rev)
 
     if [[ $glibc_version =~ [^[:digit:]\.] ]]; then
@@ -584,16 +661,17 @@ check_linux_glibc() {
     fi
 
     # We pass here because:
-    #   1. In python-package building should work with older glibc version.
+    #   1. Building python-package should work with an older glibc version.
     #   2. Our generic "lnx" runtime might work with a slightly older glibc 2.
-    if [ ${glibc_version_array[1]} -lt 11 ]; then
-        (>&2 echo "Beware glibc versions older than 2.11 were NOT tested!")
-        (>&2 echo "Detected glibc version: $glibc_version")
+    if [ ${glibc_version_array[1]} -lt ${supported_glibc2_version} ]; then
+        (>&2 echo -n "Detected glibc version: ${glibc_version}. Versions older")
+        (>&2 echo " than 2.${supported_glibc2_version} were NOT tested!")
+
     fi
 
     set -o errexit
 
-    # glibc 2 detected, we set $OS for a generic build.
+    # glibc 2 detected, we set $OS for a generic Linux build.
     OS="lnx"
 }
 
@@ -657,8 +735,8 @@ detect_os() {
                         ;;
                     ubuntu|ubuntu-core)
                         os_version_raw="$VERSION_ID"
-                        # 12.04/14.04 have OpenSSL 1.0.1, use generic Linux.
-                        check_os_version "$distro_fancy_name" 16.04 \
+                        # For versions with older OpenSSL, use generic build.
+                        check_os_version "$distro_fancy_name" 18.04 \
                             "$os_version_raw" os_version_chevah
                         # Only LTS versions are supported. If it doesn't end in
                         # 04 or first two digits are uneven, use generic build.
@@ -802,8 +880,11 @@ if [ "$COMMAND" = "purge" ] ; then
     exit 0
 fi
 
-if [ "$COMMAND" = "detect_os" ] ; then
-    write_default_values
+# Initialize BUILD_ENV_VARS file when building python-package from scratch.
+if [ "$COMMAND" == "detect_os" ]; then
+    echo "PYTHON_VERSION=$PYTHON_NAME" > BUILD_ENV_VARS
+    echo "OS=$OS" >> BUILD_ENV_VARS
+    echo "ARCH=$ARCH" >> BUILD_ENV_VARS
     exit 0
 fi
 
@@ -821,16 +902,13 @@ if [ "$COMMAND" = "get_agent" ] ; then
 fi
 
 check_source_folder
-write_default_values
 copy_python
 install_dependencies
 
-# Always update brink when running buildbot tasks.
-for paver_task in "deps" "test_os_dependent" "test_os_independent"; do
-    if [ "$COMMAND" == "$paver_task" ] ; then
-        install_base_deps
-    fi
-done
+# Update brink.conf dependencies when running deps.
+if [ "$COMMAND" == "deps" ] ; then
+    install_base_deps
+fi
 
 case $COMMAND in
     test_ci|test_py3)
@@ -841,9 +919,9 @@ case $COMMAND in
         ;;
 esac
 
-# Now that we have Python and Paver, let's call Paver from Python :)
 set +e
-${PYTHON_BIN} $PYTHON3_CHECK -c 'from paver.tasks import main; main()' "$@"
+execute_venv "$@"
 exit_code=$?
 set -e
+
 exit $exit_code
