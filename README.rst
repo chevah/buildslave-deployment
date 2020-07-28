@@ -1,49 +1,28 @@
 Chevah Buildslave
 =================
 
-Buildbot slave part files used by the Chevah project.
+Buildbot slave files used by the Chevah project.
 
-The buildslave is designed to be executed under a special system account.
+The build slave process is designed to be executed under a special
+system account, typically ``buildslave``.
 
-To run the builslave in debug mode, use::
+To run the build slave process in debug mode with logs in the current console::
 
-    paver debug -n BUILDSLAVE
-
-BUILDSLAVE is one of the names configured in buildbot-master. This paver
-task will run in foreground, listing all logs in the console.
+    ./brink.sh debug
 
 To start or stop the buildslave service, use::
 
-    paver start -n BUILDSLAVE
-    paver stop
+    ./brink.sh start
+    ./brink.sh stop
 
-The log file is located in build-ARCH/slave/twisted.log.
+Logs are saved at ``build-OS-ARCH/slave/twistd.log``.
 
 
 Usage on Windows
 ----------------
 
-On Windows, only debug mode is supported since we don't run the buildslave
-as a service/daemon.
+On Windows, only ``debug`` mode is supported as we don't run the build slave
+process as a service/daemon.
 
-To start the slave on Windows log using a remote session and make sure
-the session is remains after you disconnect.
-
-Use `local_paver.sh debug` for starting the buildslave.
-
-
-Usage on OSX
--------------
-
-Copy plist file in /Library/LaunchDaemons/chevah.buildslave.plist
-Load the service::
-
-    launchctl load -w /Library/LaunchDaemons/chevah.buildslave.plist
-
-Create `buildslave` account with admin right.
-Create `/var/log/buildslave` folder with write permissions for buildslave
-account.
-
-Reboot or force service start::
-
-    launchctl start com.chevah.buildslave
+To start the slave on Windows, we use a simple script that runs on boot to
+launch the ``./brink.sh start`` command.
