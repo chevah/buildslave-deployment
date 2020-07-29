@@ -253,6 +253,7 @@ update_path_variables() {
     export CHEVAH_PYTHON=${PYTHON_NAME}
     export CHEVAH_OS=${OS}
     export CHEVAH_ARCH=${ARCH}
+    export CHEVAH_CACHE=${CACHE_FOLDER}
 
 }
 
@@ -411,6 +412,7 @@ get_python_dist() {
         get_binary_dist $python_distributable $remote_base_url/${OS}/${ARCH}
     else
         (>&2 echo "Requested version was not found on the remote server.")
+        (>&2 echo "$remote_base_url $python_distributable")
         exit 4
     fi
 }
@@ -615,12 +617,12 @@ check_linux_glibc() {
     local supported_glibc2_version
 
     # Supported minimum minor glibc 2.X versions for various arches.
-    # For x64, we build on SLES 11 with glibc 2.11.3.
+    # For x64, we build on CentOS 5.11 (Final) with glibc 2.5.
     # For arm64, we build on Ubuntu 16.04 with glibc 2.23.
     # Beware we haven't normalized arch names yet.
     case "$ARCH" in
         "amd64"|"x86_64"|"x64")
-            supported_glibc2_version=11
+            supported_glibc2_version=5
             ;;
         "aarch64"|"arm64")
             supported_glibc2_version=23
