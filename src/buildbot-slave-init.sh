@@ -40,24 +40,23 @@ COMMONS_BRANCH="/srv/buildslave/chevah/commons"
 SERVICE_NAME="Chevah Buildbot Slave"
 PID_FILE=$INSTALL_ROOT"/build-*/slave/twistd.pid"
 LOG_FILE=$INSTALL_ROOT"/build-*/slave/twistd.log"
-PAVER="/srv/buildslave/chevah/brink/paver.sh"
+BRINK_SCRIPT="/srv/buildslave/chevah/brink/brink.sh"
 
 start_service() {
     echo -n "Starting ${SERVICE_NAME} services: "
-    # Get the latest commons code in case these changes are required for
-    # starting paver.
+    # Get latest commons code in case these changes are required for starting.
     cd $COMMONS_BRANCH
     sudo -E su buildslave -c "git pull"
-    # The paver start target will do the rest.
+    # The start target will do the rest.
     cd ${INSTALL_ROOT}
-    sudo -E su buildslave -c "$PAVER start"
+    sudo -E su buildslave -c "$BRINK_SCRIPT start"
     echo "."
 }
 
 debug_service() {
     echo -n "Debugging ${SERVICE_NAME} services: "
     cd ${INSTALL_ROOT}
-    sudo -E su buildslave -c "$PAVER debug"
+    sudo -E su buildslave -c "$BRINK_SCRIPT debug"
 }
 
 stop_service() {
