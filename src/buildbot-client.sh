@@ -88,7 +88,7 @@
 DAEMON_USER="chevah"
 INSTALL_ROOT="/srv/buildbot/runtime/"
 SERVICE_NAME="Chevah buildbot client"
-PID_FILE=$INSTALL_ROOT/"build-*/client/twistd.pid"
+PID_FILE=$INSTALL_ROOT/"build-*/slave/twistd.pid"
 DAEMON_BIN="./brink.sh"
 DAEMON_LOGDIR="/var/log/buildbot"
 DAEMON_NAME="python"
