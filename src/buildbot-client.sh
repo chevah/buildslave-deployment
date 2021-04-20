@@ -1,18 +1,18 @@
 #!/bin/sh
 
 ### BEGIN INIT INFO
-# Provides:          buildslave
+# Provides:          buildbot
 # Required-Start:    $local_fs $remote_fs $network $syslog
 # Required-Stop:     $local_fs $remote_fs $network $syslog
 # chkconfig:         2345 99 01
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Buildbot slave for the Chevah project
-# Description:       Buildbot slave for the Chevah project
+# Short-Description: Buildbot client for the Chevah project
+# Description:       Buildbot client for the Chevah project
 ### END INIT INFO
 
 # FreeBSD keywords:
-# PROVIDE: buildslave
+# PROVIDE: buildbot
 # REQUIRE: LOGIN
 # KEYWORD: shutdown
 
@@ -21,76 +21,76 @@
 # Also, a GNU-compatible patch is needed in /usr/bin (buildbot's limitation).
 #
 
-# This file should live as /etc/init.d/buildslave
-# For AIX that would be /etc/rc.d/init.d/buildslave
-# For HP-UX that would be /sbin/init.d/buildslave
-# For FreeBSD that would be /usr/local/etc/rc.d/buildslave
-# For OpenBSD that would be /etc/rc.d/buildslave
+# This file should live as /etc/init.d/buildbot
+# For AIX that would be /etc/rc.d/init.d/buildbot
+# For HP-UX that would be /sbin/init.d/buildbot
+# For FreeBSD that would be /usr/local/etc/rc.d/buildbot
+# For OpenBSD that would be /etc/rc.d/buildbot
 
 # Debian/Ubuntu usage (as root).
 #  * enable service at boot:
-#      update-rc.d buildslave defaults
+#      update-rc.d buildbot defaults
 #  * manually start the service:
-#      service buildslave start
+#      service buildbot start
 #  * manually stop the service:
-#      service buildslave stop
+#      service buildbot stop
 #
 # RedHat/CentOS/SUSE usage (as root).
 #  * enable service at boot:
-#      chkconfig --add buildslave
+#      chkconfig --add buildbot
 #  * manually start the service:
-#      service buildslave start
+#      service buildbot start
 #  * manually stop the service:
-#      service buildslave stop
+#      service buildbot stop
 #
 # AIX usage (as root).
 #  * enable service at boot:
-#      ln -s /etc/rc.d/init.d/buildslave /etc/rc.d/rc2.d/S90buildslave
+#      ln -s /etc/rc.d/init.d/buildbot /etc/rc.d/rc2.d/S90buildbot
 #  * manually start the service:
-#      /etc/rc.d/init.d/buildslave start
+#      /etc/rc.d/init.d/buildbot start
 #  * manually stop the service:
-#      /etc/rc.d/init.d/buildslave stop
+#      /etc/rc.d/init.d/buildbot stop
 #
 # Solaris usage (as root).
 #  * enable service at boot:
-#      ln -s /etc/init.d/buildslave /etc/rc3.d/S90buildslave
+#      ln -s /etc/init.d/buildbot /etc/rc3.d/S90buildbot
 #  * manually start the service:
-#      /etc/init.d/buildslave start
+#      /etc/init.d/buildbot start
 #  * manually stop the service:
-#      /etc/init.d/buildslave stop
+#      /etc/init.d/buildbot stop
 #
 # HP-UX usage (as root).
 #  * enable service at boot:
-#      ln -s /sbin/init.d/buildslave /sbin/rc3.d/S900buildslave
+#      ln -s /sbin/init.d/buildbot /sbin/rc3.d/S900buildbot
 #  * manually start the service:
-#      /sbin/init.d/buildslave start
+#      /sbin/init.d/buildbot start
 #  * manually stop the service:
-#      /sbin/init.d/buildslave stop
+#      /sbin/init.d/buildbot stop
 #
 # FreeBSD usage (as root).
 #  * enable service at boot:
-#      echo 'buildslave_enable="YES"' >> /etc/rc.conf
+#      echo 'buildbot_enable="YES"' >> /etc/rc.conf
 #  * manually start the service:
-#      service buildslave start
+#      service buildbot start
 #  * manually stop the service:
-#      service buildslave stop
+#      service buildbot stop
 #
 # OpenBSD usage (as root).
 #  * enable service at boot:
-#      rcctl set buildslave status on
+#      rcctl set buildbot status on
 #  * manually start the service:
-#      /etc/rc.d/buildslave start
+#      /etc/rc.d/buildbot start
 #  * manually stop the service:
-#      /etc/rc.d/buildslave stop
+#      /etc/rc.d/buildbot stop
 
 # Do NOT "set -e".
 
-DAEMON_USER="buildslave"
-INSTALL_ROOT="/srv/buildslave/runtime/"
-SERVICE_NAME="Chevah buildbot slave"
-PID_FILE=$INSTALL_ROOT/"build-*/slave/twistd.pid"
+DAEMON_USER="chevah"
+INSTALL_ROOT="/srv/buildbot/runtime/"
+SERVICE_NAME="Chevah buildbot client"
+PID_FILE=$INSTALL_ROOT/"build-*/client/twistd.pid"
 DAEMON_BIN="./brink.sh"
-DAEMON_LOGDIR="/var/log/buildslave"
+DAEMON_LOGDIR="/var/log/buildbot"
 DAEMON_NAME="python"
 TIMEOUT_SECONDS="10"
 
@@ -99,7 +99,7 @@ TIMEOUT_SECONDS="10"
 # Logs should go to /var/adm on HP-UX.
 if [ x`uname` = x'HP-UX' ]; then
     export UNIX_STD=2003 PATH="/usr/sbin:/usr/bin:/sbin:/usr/local/bin"
-    DAEMON_LOGDIR="/var/adm/buildslave"
+    DAEMON_LOGDIR="/var/adm/buildbot"
 fi
 
 # For FreeBSD and OpenBSD, make sure /usr/local/bin is in the path for brink.sh.
@@ -314,11 +314,11 @@ case "$1" in
         else
             myprintf=true
         fi
-        if grep --quiet 'buildslave_enable="YES' /etc/rc.conf; then
-            $myprintf 'buildslave_enable="YES"\n'
+        if grep --quiet 'buildbot_enable="YES' /etc/rc.conf; then
+            $myprintf 'buildbot_enable="YES"\n'
             exit 0
         else
-            $myprintf 'buildslave_enable="NO"\n'
+            $myprintf 'buildbot_enable="NO"\n'
             exit 1
         fi
         ;;
